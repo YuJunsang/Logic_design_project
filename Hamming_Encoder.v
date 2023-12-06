@@ -38,3 +38,27 @@ module Hamming_Encoder(
 // ************** //
 
 endmodule
+
+
+
+// 수정 코드 // 확인부탁ㄱ!
+// hamming decoder랑 마찬가지로 data_out은 wire라 바로 always안에서 수정 안되어서 c 따로 선언!
+// **** TODO **** //
+reg [7:0] c; // don't declare it as an array; c[7:0]
+
+always @ (posedge clk) begin
+    if (rstn)  c = 8'b00000000; // reset 시?
+    else begin 
+        c[0] = (data_in[0] ^ data_in[1] ^ data_in[3]); // P1
+        c[1] = (data_in[0] ^ data_in[2] ^ data_in[3]); // P2
+        c[2] = data_in[0]; // D1
+        c[3] = (data_in[1] ^ data_in[2] ^ data_in[3]); // P3
+        c[4] = data_in[1]; // D2
+        c[5] = data_in[2]; // D3
+        c[6] = data_in[3]; // D4
+        c[7] = (data_in[0] ^ data_in[1] ^ data_in[2]); // P4
+    end
+end
+
+assign data_out = c;
+// ************** //
