@@ -1,3 +1,4 @@
+
 module Hamming_Decoder(
     output [3:0] data_out,
     output err_uncorrectable, err_correctable,
@@ -22,7 +23,7 @@ reg [3:0] c;
 
 // Syndrome(A, B, C, D) calculation
 always @(posedge clk or negedge rstn) begin
-    if (~rstn) begin
+    if (rstn) begin
         c = {data_in[6], data_in[5], data_in[4], data_in[2]};
         
         // Syndrome calculation
@@ -61,5 +62,4 @@ always @(posedge clk or negedge rstn) begin
 // ************** //
 
 endmodule
-
 
