@@ -9,8 +9,8 @@ module Error_Injection(
 // **** TODO **** //
 reg [7:0] c;
 
-always @ (posedge clk) begin
-    if (rstn)  c = 8'b00000000; // reset 시?
+always @ (posedge clk or negedge rstn) begin
+    if (~rstn)  c = 8'b00000000; // reset 시?
     else begin
         c = data_in;
         if(btn1 && btn2) begin
