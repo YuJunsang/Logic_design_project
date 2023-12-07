@@ -22,7 +22,10 @@ always @ (posedge clk or negedge rstn) begin
         c = 8'b00000000;
 end
 
+
 assign data_out = c;
+$display("incoder data_out: %b",c)
+
 // ************** //
 
 endmodule
