@@ -1,3 +1,4 @@
+
 module Hamming_Encoder(
     output [7:0] data_out,
     input [3:0] data_in,
@@ -8,7 +9,7 @@ module Hamming_Encoder(
 reg [7:0] c; // don't declare it as an array; c[7:0]
 
 always @ (posedge clk or negedge rstn) begin
-    if (~rstn) begin // reset 시?
+    if (rstn) begin // reset 시?
         c[0] = (data_in[0] ^ data_in[1] ^ data_in[3]); // P1
         c[1] = (data_in[0] ^ data_in[2] ^ data_in[3]); // P2
         c[2] = data_in[0]; // D1
