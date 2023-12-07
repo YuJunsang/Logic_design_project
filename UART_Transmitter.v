@@ -1,3 +1,74 @@
+// (앞 부분은 동일하게 유지됩니다.)
+
+always @(posedge clk or negedge rstn) begin
+    if (!rstn) begin
+        state <= idle;
+        // 초기화 또는 리셋 시 필요한 값들 초기화
+        data_reg <= 8'b00000000;
+        shift_reg <= 9'b111111111;
+        bit_cnt <= 4'b0000;
+        clear <= 0;
+        start <= 0;
+    end
+    else begin
+        case (state)
+            idle: begin
+                // idle 상태에서의 동작 처리
+                if (b_ready)
+                    next_state = waiting;
+                else
+                    next_state = idle;
+            end
+            waiting: begin
+                // waiting 상태에서의 동작 처리
+                if (t_init && start) begin
+                    next_state = sending;
+                    start <= 0;
+                end
+                else
+                    next_state = waiting;
+            end
+            sending: begin
+                // sending 상태에서의 동작 처리
+                if (clear) begin 
+                    next_state = idle;
+                    clear <= 0;
+                end
+                else
+                    next_state = sending;
+            end
+            default: next_state = idle;
+        endcase
+    end
+end
+
+always @(posedge clk or negedge rstn) begin
+    if (!rstn) begin
+        // Reset 조건 처리
+    end
+    else begin
+        // state == idle 일 때의 동작 처리
+        if (state == idle) begin
+            // idle 상태에서의 동작 처리
+            shift_reg[0] <= 1'b1; 
+            bit_cnt <= 4'b0000;
+        end
+        // state == waiting 일 때의 동작 처리
+        else if (state == waiting) begin
+            // waiting 상태에서의 동작 처리
+            // (load_shift 및 load_data 처리)
+        end
+        // state == sending 일 때의 동작 처리
+        else begin 
+            // sending 상태에서의 동작 처리
+            // (clear 및 bit_cnt 처리, shift_reg shift 처리)
+        end
+    end
+end
+
+// 나머지 코드는 그대로 유지됩니다.
+
+
 
 module UART_Transmitter (
     output serial_out,
