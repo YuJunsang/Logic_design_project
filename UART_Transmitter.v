@@ -69,46 +69,43 @@ end
 always @(posedge clk or negedge rstn) begin
     if(!rstn) begin
         // **** TODO **** //
-            // state== idle
-            if (state == idle) begin
-                 shift_reg[0] <= 1'b1; 
-                 bit_cnt <= 4'b0000;
+        state <= idle;
+        data_reg <= 8'b00000000;
+        shift_reg <= 9'b111111111;
+        bit_cnt <= 4'b0000;
+        clear = 0;
+        start = 0;
+     end else begin
+        // state== idle
+        if (state == idle) begin
+             shift_reg[0] <= 1'b1; 
+             bit_cnt <= 4'b0000;
+        
+        // state== waiting
+        end else if (state == waiting) begin
+            if (load_shift) begin // data_reg => shift_reg
+                shift_reg <= {data_reg, 1'b0};
+                start = 1; // sending 준비완료
+            end else if (load_data) begin // data_input => data_reg
+                data_reg <= data_bus;
+                load_shift = 1; // data_reg가 input data 받았다는 signal
+            end else load_shift = 0; // data_input => data_reg not ready
             
-            // state== waiting
-            end else if (state == waiting) begin
-                if (load_shift) begin // data_reg => shift_reg
-                    shift_reg <= {data_reg, 1'b0};
-                    start = 1; // sending 준비완료
-                end else if (load_data) begin // data_input => data_reg
-                    data_reg <= data_bus;
-                    load_shift = 1; // data_reg가 input data 받았다는 signal
-                end else load_shift = 0; // data_input => data_reg not ready
-                
-            // state== sending 
-            end else begin 
-                if (bit_cnt == 4'b1001) begin
-                    clear = 1; // sending => idle 상태로
-                    bit_cnt <= 4'b0000;
-                end
-                else if (bit_cnt == 4'b0001)begin
-                    shift_reg <= {1'b1, shift_reg[8:1]};
-                    bit_cnt = bit_cnt + 1;
-                end else begin// bit_cnt < 9
-                    bit_cnt = bit_cnt + 1;
-                    shift_reg <= shift_reg >> 1; // 1 right_shift 
-                end
+        // state== sending 
+        end else begin 
+            if (bit_cnt == 4'b1001) begin
+                clear = 1; // sending => idle 상태로
+                bit_cnt <= 4'b0000;
             end
-        // ************** // 
-    end
-    else begin
-        // **** TODO **** //
-            state <= idle;
-            data_reg <= 8'b00000000;
-            shift_reg <= 9'b111111111;
-            bit_cnt <= 4'b0000;
-            clear = 0;
-            start = 0;
-        // ************** // 
+            else if (bit_cnt == 4'b0001)begin
+                shift_reg <= {1'b1, shift_reg[8:1]};
+                bit_cnt = bit_cnt + 1;
+            end else begin// bit_cnt < 9
+                bit_cnt = bit_cnt + 1;
+                shift_reg <= shift_reg >> 1; // 1 right_shift 
+            end
+        end
+    // ************** // 
     end
 end
 
