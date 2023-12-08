@@ -1,103 +1,3 @@
-///////////////////////////////////
-module UART_Transmitter (
-    output wire serial_out,
-    input [7:0] data_bus,
-    input b_ready,
-    input load_data,
-    input t_init,
-    input clk,
-    input rstn 
-);
-
-parameter idle = 2'b00;
-parameter waiting = 2'b01;
-parameter sending = 2'b10;
-
-reg [7:0] data_reg;
-reg [8:0] shift_reg;
-reg load_shift;
-reg [1:0] state, next_state;
-reg [3:0] bit_cnt;
-reg clear;
-reg shift;
-reg start;
-
-assign serial_out = shift_reg[0];
-
-always @(*) begin
-    
-    load_shift = 0;
-    clear = 0;
-    shift = 0;
-    start = 0;
-    next_state = state;
-    case(state)
-        idle: begin
-            if(load_data) begin
-                data_reg = data_bus;
-            end
-            if (b_ready) begin //b_ready일때 waiting으로 넘어가야함 t_init은 언제?
-                //load_shift = 1;
-                start = 1;
-                next_state = waiting;
-            end
-            
-        end
-        waiting: begin
-            if (t_init) begin
-                load_shift = 1;
-                next_state = sending;
-            end
-        end
-        sending: begin
-            if (bit_cnt < 8) begin
-                shift = 1;
-                bit_cnt = bit_cnt + 1;
-            end else begin
-                clear = 1;
-                next_state = idle;
-            end
-        end
-        default: next_state = idle;
-    endcase
-end
-
-always @(posedge clk or negedge rstn) begin
-
-    if (!rstn) begin
-        state <= idle;
-        bit_cnt <= 0;
-    end else begin
-        state <= next_state;
-    end
-end
-
-always @(posedge clk or negedge rstn) begin
-
-   // $display("serial_out:%b",serial_out);
-   // $display("data_reg:%b", data_reg);
-    //$display("load_shift:%b" ,load_shift);
-    $display("shift_reg:%b" ,shift_reg);
-    //$display("shift%b" ,shift);
-    //$display("state:%b" ,state);
-    if (!rstn) begin
-        shift_reg <= 9'b111111111; // Initialize shift_reg with start bit
-    end else begin
-        if (load_shift) begin
-            shift_reg <= {data_reg, 1'b0}; // Load data_reg into shift_reg
-        end else if (shift) begin
-            shift_reg <= {1'b1,shift_reg[8:1]}; // Shift data for transmission
-        end else if (clear) begin
-            shift_reg <= 9'b111111111; // After transmission, set start bit again
-        end
-    end
-end
-
-endmodule
-
-
-
-//////////////////
 
 module UART_Transmitter (
     output serial_out,
@@ -131,87 +31,78 @@ initial begin
     shift_reg = 9'b111111111;
     bit_cnt = 4'b0000;
 end
-    
+ 
+ assign serial_out = shift_reg[0];
+
 always @(*) begin
-    next_state = state;
     
+    load_shift = 0;
+    clear = 0;
+    shift = 0;
+    start = 0;
+    next_state = state;
     case(state)
         idle: begin
-            // **** TODO **** //
-            if (b_ready) next_state <= waiting;
-            else next_state <= idle;
-            // ************** // 
+            if(load_data) begin
+                data_reg = data_bus;
+                start = 1;
+            end
+            if (b_ready) begin
+                next_state = waiting;
+            end
         end
         waiting: begin
-            // **** TODO **** //
-            if (t_init && start) begin
-                next_state <= sending;
-                start = 0;
-            end else next_state <= waiting;
-            // ************** // 
+            if (t_init) begin
+                load_shift = 1;
+                next_state = sending;
+            end
         end
         sending: begin
-            // **** TODO **** //
-            if (clear) begin 
-                next_state <= idle;
-                clear = 0;
-            end else next_state <= sending;
-            // ************** // 
+            if (bit_cnt < 8) begin
+                shift = 1;
+                //bit_cnt = bit_cnt + 1;
+            end else begin
+                next_state = idle;
+                clear = 1;
+            end
         end
         default: next_state = idle;
     endcase
 end
 
 always @(posedge clk or negedge rstn) begin
-    $display("UART_tx/clk : %b", shift_reg[0]);
-    if(!rstn) begin
-        // **** TODO **** //
+
+    if (!rstn) begin
         state <= idle;
-        data_reg <= 8'b00000000;
-        shift_reg <= 9'b111111111;
-        bit_cnt <= 4'b0000;
-        clear = 0;
-        start = 0;
-        load_shift = 0;
-     end 
-     else begin
-         state <= next_state;
-         // state와 상관없이 data_input => data_reg
-         if (load_data) begin 
-            data_reg <= data_bus;
-            load_shift = 1; // data_reg가 input data 받았다는 signal
-         end
-         
-        
-        case (state)
-            idle: begin 
-                shift_reg[0] <= 1'b1;
-            end
-        
-            waiting: begin
-                if (load_shift) start = 1; // transmission 가능
-            end
-           
-            sending: begin 
-                if (bit_cnt == 4'b1001) begin
-                    clear = 1; // 다음 clk에서는 sending => idle 상태로
-                    bit_cnt <= 4'b0000;
-                end
-                else if (bit_cnt == 4'b0000) begin // cnt = 0일 때 start_bit(0) 출력
-                    shift_reg <= {data_reg, 1'b0};
-                    bit_cnt = bit_cnt + 4'b0001;
-                end
-                else begin // cnt = 1 ~ 8일 때 MSB에 stop_bit(1) 삽입
-                    shift_reg <= {1'b1, shift_reg[8:1]};
-                    bit_cnt = bit_cnt + 4'b0001;
-                end
-            end
-         endcase
-     end
-    // ************** // 
+        bit_cnt <= 0;
+    end else begin
+        state <= next_state;
+    end
 end
 
+always @(posedge clk or negedge rstn) begin
+
+    //$display("shift_reg:%b" ,shift_reg);
+    //$display("shift:%b", shift);
+    //$display("state:%b", state);
+    //$display("cnt:%b", bit_cnt);
+    
+    if (!rstn) begin
+        shift_reg = 9'b111111111; // Initialize shift_reg with start bit
+    end else begin
+        if (load_shift) begin
+            shift_reg = {data_reg, 1'b0}; // Load data_reg into shift_reg
+        end else if (shift) begin
+            shift_reg = {1'b1,shift_reg[8:1]}; // Shift data for transmission
+            bit_cnt = bit_cnt + 1;
+        end else if (clear) begin
+            bit_cnt = 0;
+        end
+    end
+end
+////////////////////////////////////////
 endmodule
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
